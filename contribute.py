@@ -1,6 +1,10 @@
 import github
 from github import Github
+<<<<<<< Updated upstream
 import os,sys,time,platform,base64
+=======
+import os,sys,platform,base64,time,requests,json
+>>>>>>> Stashed changes
 
 # Intializing the Variables
 # Hashed token
@@ -27,8 +31,13 @@ def checkInputValidity():
 
 def getPRs(upstream_repo):
     try:
+<<<<<<< Updated upstream
         return upstream_repo.get_pulls(head=f'{OWNER_NAME}:{BRANCH_NAME}')
     except Exception as e:
+=======
+        return upstream_repo.get_pulls(head=f'{BOT_ACCOUNT}:{BRANCH_NAME}')
+    except:
+>>>>>>> Stashed changes
         print("Not able to fetch Status of your example.Please try after some time.")
         exit(0)
 
@@ -46,13 +55,17 @@ def anyOpenPR(upstream_repo):
 
 def commitAndUpdateRef(repo,tree_content,commit,branch):
     try:
-        new_tree = repo.create_git_tree(tree=tree_content,base_tree=commit.commit.tree)
-        new_commit = repo.create_git_commit("commit message",new_tree,[commit.commit])
-        if len(repo.compare(base=commit.commit.sha,head=new_commit.sha).files) == 0:
+        print(time.time())
+        new_tree = requests.post(url=f"https://api.github.com/repos/{BOT_ACCOUNT}/{REPO_NAME}/git/trees",data=json.dumps({'base_tree':commit.commit.tree.sha,'tree':tree_content}),headers={'Authorization':'Bearer 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'}).json()
+        new_commit = requests.post(url=f"https://api.github.com/repos/{BOT_ACCOUNT}/{REPO_NAME}/git/commits",data=json.dumps({'message':'commit message','tree':new_tree['sha'],'parents':[commit.commit.sha]}),headers={'Authorization':'Bearer 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'}).json()
+        # new_tree = repo.create_git_tree(tree=tree_content,base_tree=commit.commit.tree)
+        # new_commit = repo.create_git_commit("commit message",new_tree,[commit.commit])
+        print(time.time())
+        if len(repo.compare(base=commit.commit.sha,head=new_commit['sha']).files) == 0:
             print("Your don't have any new changes.May be your example is already accepted.If this is not the case try with different fields.")
             exit(0)
         ref = repo.get_git_ref("heads/"+branch.name)
-        ref.edit(new_commit.sha,True)
+        ref.edit(new_commit['sha'],True)
     except Exception as e:
         print("failed to Upload your example.Please try after some time.",end="")
         exit(0)
@@ -60,7 +73,7 @@ def commitAndUpdateRef(repo,tree_content,commit,branch):
 
 def appendBlobInTree(repo,content,file_path,tree_content):
     blob = repo.create_git_blob(content,'utf-8')
-    tree_content.append( github.InputGitTreeElement(path=file_path,mode="100644",type="blob",sha=blob.sha))
+    tree_content.append( {'path':file_path,'mode':"100644",'type':"blob",'sha':blob.sha})
 
 
 def runWorkflow(repo,upstream_repo):
@@ -78,6 +91,7 @@ def runWorkflow(repo,upstream_repo):
 
 def printPRStatus(upstream_repo):
     try:
+<<<<<<< Updated upstream
         time.sleep(15)
         openPR = anyOpenPR(upstream_repo)
         if openPR==None:
@@ -85,6 +99,17 @@ def printPRStatus(upstream_repo):
             exit(0)
         printPR(openPR)
     except Exception as e:
+=======
+        issues = upstream_repo.get_issues()
+        pulls = upstream_repo.get_pulls(state='all')
+        max_num = -1
+        for i in issues:
+            max_num = max(max_num,i.number)
+        for i in pulls:
+            max_num = max(max_num,i.number)
+        print(f'Check your example here https://github.com/{UPSTREAM_ACCOUNT}/{REPO_NAME}/pulls/{max_num+1}',end="")
+    except:
+>>>>>>> Stashed changes
         print("Your example successfully uploaded but unable to fetch status.Please try again")
     
 
@@ -113,31 +138,42 @@ try:
         PR_TITLE=f"Contributing Study {STUDY_NAME} by {AUTHOR_NAME}"
     if PR_BODY=="#":
         PR_BODY=f"Study Name: {STUDY_NAME} \n Author Name: {AUTHOR_NAME}"
+<<<<<<< Updated upstream
     AUTHOR_NAME = AUTHOR_NAME.replace(" ","_")
     DIR_PATH = AUTHOR_NAME + '_' + STUDY_NAME
     g = Github(decode_token(BOT_TOKEN))
     repo = g.get_user(OWNER_NAME).get_repo(BOT_REPO_NAME)
     upstream_repo = g.get_repo(f'{OWNER_NAME}/{UPSTREAM_REPO_NAME}') #controlcore-Project/concore
+=======
+    DIR_PATH = STUDY_NAME
+    g = Github(decode_token(BOT_TOKEN))
+    repo = g.get_repo(f"{BOT_ACCOUNT}/{REPO_NAME}")
+    upstream_repo = g.get_repo(f'{UPSTREAM_ACCOUNT}/{REPO_NAME}') #controlcore-Project/concore-studies
+>>>>>>> Stashed changes
     base_ref = upstream_repo.get_branch(repo.default_branch)
-    branches = repo.get_branches()
+    AUTHOR_NAME = AUTHOR_NAME.replace(" ","_")
     BRANCH_NAME = BRANCH_NAME.replace(" ","_")
     DIR_PATH = DIR_PATH.replace(" ","_")
+<<<<<<< Updated upstream
     is_present = any(branch.name == BRANCH_NAME for branch in branches)
 except:
     print("Some error occured.Authentication failed",end="")
     exit(0)
+=======
+    is_present = False
+    branch = repo.get_branch(BRANCH_NAME)
+    is_present=True
+except:
+    print("Creating new example study.",end="")
+>>>>>>> Stashed changes
 
 
-try:
-    # If creating PR First Time
-    # Create New Branch for that exmaple
-    if not is_present:
-        repo.create_git_ref(f'refs/heads/{BRANCH_NAME}', base_ref.commit.sha)
-    # Get current branch
+
+# If creating PR First Time
+# Create New Branch for that exmaple
+if not is_present:
+    repo.create_git_ref(f'refs/heads/{BRANCH_NAME}', base_ref.commit.sha)
     branch = repo.get_branch(branch=BRANCH_NAME)
-except Exception as e:
-    print("Not able to create study for you.Please try again after some time",end="")
-    exit(0)
 
 
 tree_content = []
@@ -156,8 +192,10 @@ try:
             file_path = f'{DIR_PATH+path.removeprefix(STUDY_NAME_PATH)}'
             if(platform.uname()[0]=='Windows'): file_path=file_path.replace("\\","/")
             appendBlobInTree(repo,content,file_path,tree_content)
+    print(f"Commit start {time.time()}")
     commitAndUpdateRef(repo,tree_content,base_ref.commit,branch)
+    print(f"workflow start {time.time()}")
     runWorkflow(repo,upstream_repo)
-except Exception as e:
+except:
     print("Some error Occured.Please try again after some time.",end="")
     exit(0)
